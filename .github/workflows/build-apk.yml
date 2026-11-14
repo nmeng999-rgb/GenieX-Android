@@ -33,12 +33,17 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install Android components
+      - name: Configure Android SDK
+        shell: bash
         run: |
-          sdkmanager "platforms;android-34" "build-tools;34.0.0" "ndk;27.3.13750724"
+          set -euo pipefail
+          SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | sort -V | tail -n 1)"
+          if [ -z "$SDKMANAGER" ]; then
+            echo "sdkmanager not found"
+            exit 1
+          fi
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platforms;android-34" "build-tools;34.0.0" "ndk;27.3.13750724"
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
@@ -47,7 +52,7 @@ jobs:
 
       - name: Build APK
         working-directory: qai-hub-apps/geniex_chat_android
-        run: gradle assembleDebug
+        run: gradle assembleDebug --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
@@ -56,3 +61,4 @@ jobs:
           path: qai-hub-apps/geniex_chat_android/build/outputs/apk/debug/*.apk
           if-no-files-found: error
           retention-days: 14
+          
