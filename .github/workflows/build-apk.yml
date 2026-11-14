@@ -1,1 +1,44 @@
-.github/workflows/build-apk.yml
+
+name: Build GenieX APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout project
+        uses: actions/checkout@v4
+
+      - name: Checkout Qualcomm GenieX sample
+        uses: actions/checkout@v4
+        with:
+          repository: qualcomm/ai-hub-apps
+          ref: release
+          path: qai-hub-apps
+          sparse-checkout: |
+            geniex_chat_android
+          sparse-checkout-cone-mode: true
+
+      - name: Build debug APK
+        working-directory: qai-hub-apps/geniex_chat_android
+        run: |
+          chmod +x build.sh
+          ./build.sh
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: GenieX-debug-apk
+          path: |
+            qai-hub-apps/geniex_chat_android/build/outputs/apk/debug/*.apk
+            qai-hub-apps/geniex_chat_android/build/outputs/apk/androidTest/debug/*.apk
+          if-no-files-found: error
+          retention-days: 14
